@@ -50,6 +50,62 @@ class WebsitePerceptorBase(ABC):
         self.cache_max_age_hours = cache_max_age_hours
         self.llm = Tongyi(model_name=model_name, dashscope_api_key=api_key)
         
+    def get_homepage_filter_cache_path(self) -> str:
+        """获取首页筛选结果的缓存文件路径"""
+        # 使用网站URL的hash值作为文件名
+        url_hash = hashlib.md5(self.url.encode()).hexdigest()
+        # 清理网站名称，移除特殊字符
+        safe_name = re.sub(r'[^\w\-_\.]', '_', self.name)
+        cache_subdir = os.path.join(self.cache_dir, safe_name)
+        os.makedirs(cache_subdir, exist_ok=True)
+        return os.path.join(cache_subdir, f"homepage_filtered_links_{url_hash}.json")
+    
+    def load_homepage_filter_from_cache(self, cache_path: str) -> Optional[List[Dict[str, str]]]:
+        """从缓存加载首页筛选结果"""
+        if not self.cache_enabled:
+            return None
+            
+        if not os.path.exists(cache_path):
+            return None
+        
+        # 检查缓存是否过期
+        file_time = datetime.fromtimestamp(os.path.getmtime(cache_path))
+        if datetime.now() - file_time > timedelta(hours=self.cache_max_age_hours):
+            return None
+        
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # 确保返回的是链接列表
+                if isinstance(data, list):
+                    return data
+                elif isinstance(data, dict) and "filtered_links" in data:
+                    return data["filtered_links"]
+                else:
+                    return None
+        except Exception as e:
+            print(f"[警告] 读取首页筛选缓存失败: {str(e)}")
+            return None
+    
+    def save_homepage_filter_to_cache(self, filtered_links: List[Dict[str, str]], cache_path: str):
+        """保存首页筛选结果到缓存"""
+        if not self.cache_enabled:
+            return
+            
+        try:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            cache_data = {
+                "website_name": self.name,
+                "url": self.url,
+                "filtered_links": filtered_links,
+                "cached_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "count": len(filtered_links)
+            }
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[警告] 保存首页筛选缓存失败: {str(e)}")
+    
     def get_perception_cache_path(self, article_url: str) -> str:
         """获取感知结果的缓存文件路径"""
         # 使用文章URL的hash值作为文件名
@@ -169,7 +225,7 @@ class WebsitePerceptorBase(ABC):
         return unique_links
     
     def filter_important_links(self, links: List[Dict[str, str]], homepage_content: str) -> List[Dict[str, str]]:
-        """使用大模型筛选重要且实时的链接（15-20条）"""
+        """使用大模型筛选重要且实时的链接（10条）"""
         print(f"[筛选链接] {self.name}: 从 {len(links)} 个链接中筛选...")
         
         # 限制链接数量，避免超出token限制
@@ -195,7 +251,7 @@ class WebsitePerceptorBase(ABC):
 - url: 链接URL
 - reason: 选择理由
 
-请输出15-20条链接，按重要性排序。
+请输出10条链接，按重要性排序。
 """)
         
         # 构建链接列表文本
@@ -461,18 +517,37 @@ class WebsitePerceptorBase(ABC):
     def process(self, force_refresh: bool = False) -> Dict[str, Any]:
         """完整处理流程"""
         try:
-            # 1. 获取首页内容
-            print(f"\n[处理网站] {self.name}")
-            print(f"[获取首页] {self.url}")
-            homepage_content = self._fetch_from_web(self.url)
+            # 检查首页筛选结果缓存
+            filter_cache_path = self.get_homepage_filter_cache_path()
+            filtered_links = None
             
-            # 2. 提取链接
-            print(f"[提取链接] {self.name}")
-            all_links = self.extract_links_from_homepage(homepage_content)
-            print(f"  找到 {len(all_links)} 个链接")
+            if not force_refresh:
+                cached_filtered_links = self.load_homepage_filter_from_cache(filter_cache_path)
+                if cached_filtered_links:
+                    print(f"\n[处理网站] {self.name}")
+                    print(f"[缓存命中] 使用缓存的筛选链接列表")
+                    filtered_links = cached_filtered_links
+                    print(f"  找到 {len(filtered_links)} 条缓存的链接")
             
-            # 3. 筛选重要链接
-            filtered_links = self.filter_important_links(all_links, homepage_content)
+            # 如果没有缓存，需要重新获取和筛选
+            if filtered_links is None:
+                # 1. 获取首页内容
+                print(f"\n[处理网站] {self.name}")
+                print(f"[获取首页] {self.url}")
+                homepage_content = self._fetch_from_web(self.url)
+                
+                # 2. 提取链接
+                print(f"[提取链接] {self.name}")
+                all_links = self.extract_links_from_homepage(homepage_content)
+                print(f"  找到 {len(all_links)} 个链接")
+                
+                # 3. 筛选重要链接
+                filtered_links = self.filter_important_links(all_links, homepage_content)
+                
+                # 保存筛选结果到缓存
+                if filtered_links:
+                    self.save_homepage_filter_to_cache(filtered_links, filter_cache_path)
+                    print(f"[缓存已保存] 首页筛选结果已保存")
             
             if not filtered_links:
                 print(f"[警告] {self.name}: 未筛选到有效链接")
