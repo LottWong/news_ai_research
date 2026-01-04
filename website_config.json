@@ -1,0 +1,121 @@
+{
+  "websites": [
+    {
+      "name": "Bloomberg",
+      "url": "https://www.bloomberg.com/",
+      "type": "financial",
+      "model": "Qwen-Max",
+      "language": "en",
+      "description": "彭博社"
+    },
+    {
+      "name": "雪球",
+      "url": "https://xueqiu.com/",
+      "type": "financial",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "雪球网"
+    },
+    {
+      "name": "经济时报",
+      "url": "https://economictimes.indiatimes.com/",
+      "type": "financial",
+      "model": "Qwen-Max",
+      "language": "en",
+      "description": "印度经济时报"
+    },
+    {
+      "name": "Rediff Money",
+      "url": "https://money.rediff.com/",
+      "type": "financial",
+      "model": "Qwen-Turbo",
+      "language": "en",
+      "description": "Rediff财经"
+    },
+    {
+      "name": "证券时报",
+      "url": "https://www.stcn.com/",
+      "type": "financial",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "证券时报"
+    },
+    {
+      "name": "Medium",
+      "url": "https://medium.com/",
+      "type": "tech",
+      "model": "Qwen-Turbo",
+      "language": "en",
+      "description": "Medium科技平台"
+    },
+    {
+      "name": "南华早报",
+      "url": "https://www.scmp.com/",
+      "type": "general",
+      "model": "Qwen-Turbo",
+      "language": "en",
+      "description": "南华早报"
+    },
+    {
+      "name": "新华网",
+      "url": "https://www.news.cn/",
+      "type": "general",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "新华网"
+    },
+    {
+      "name": "人民网",
+      "url": "http://www.people.com.cn/",
+      "type": "general",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "人民网"
+    },
+    {
+      "name": "南方网",
+      "url": "https://www.southcn.com/",
+      "type": "general",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "南方网"
+    },
+    {
+      "name": "求是网",
+      "url": "http://www.qstheory.cn/",
+      "type": "general",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "求是网"
+    },
+    {
+      "name": "Reddit",
+      "url": "https://www.reddit.com/",
+      "type": "forum",
+      "model": "Qwen-Turbo",
+      "language": "en",
+      "description": "Reddit论坛"
+    },
+    {
+      "name": "Discuss.com.hk",
+      "url": "https://www.discuss.com.hk/",
+      "type": "forum",
+      "model": "Qwen-Turbo",
+      "language": "zh",
+      "description": "香港讨论区"
+    }
+  ],
+  "api_keys": {
+    "dashscope": "sk-"
+  },
+  "settings": {
+    "parallel_processing": false,
+    "max_retries": 3,
+    "timeout": 30,
+    "cache_enabled": true,
+    "cache_max_age_hours": 24,
+    "cache_dir": "cache",
+    "force_refresh": false
+  }
+}
+
