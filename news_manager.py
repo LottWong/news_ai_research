@@ -95,7 +95,7 @@ class WebsitePerceptorManager:
         for i, perceptor in enumerate(self.perceptors, 1):
             print(f"\n[{i}/{len(self.perceptors)}] 处理网站: {perceptor.name}")
             try:
-                result = perceptor.process(use_cache=True, force_refresh=force_refresh)
+                result = perceptor.process(force_refresh=force_refresh)
                 results.append(result)
             except Exception as e:
                 print(f"[错误] 处理失败 {perceptor.name}: {str(e)}")
@@ -114,7 +114,7 @@ class WebsitePerceptorManager:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # 提交所有任务
             future_to_perceptor = {
-                executor.submit(perceptor.process, use_cache=True, force_refresh=force_refresh): perceptor
+                executor.submit(perceptor.process, force_refresh=force_refresh): perceptor
                 for perceptor in self.perceptors
             }
             

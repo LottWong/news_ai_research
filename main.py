@@ -111,8 +111,8 @@ def main():
         api_key=api_key
     )
     
-    # 生成报告
-    report = integration_agent.integrate(all_chinese_content)
+    # 生成报告（传入所有结果以便生成引用）
+    report = integration_agent.integrate(all_chinese_content, manager.results)
     
     # 保存报告
     report_filename = integration_agent.save_report(report)

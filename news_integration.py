@@ -24,12 +24,26 @@ class NewsIntegrationAgent:
         self.api_key = api_key
         self.llm = Tongyi(model_name=model_name, dashscope_api_key=api_key)
     
-    def integrate(self, all_chinese_content: List[Dict[str, Any]]) -> str:
+    def integrate(self, all_chinese_content: List[Dict[str, Any]], all_results: List[Dict[str, Any]] = None) -> str:
         """整合所有内容并生成报告"""
         print("\n[整合阶段] 开始整合所有网站内容...")
         
         if not all_chinese_content:
             return "没有可用的内容进行整合。"
+        
+        # 收集所有文章的引用信息（标题和链接）
+        article_references = []
+        if all_results:
+            for result in all_results:
+                if result.get("success") and "chinese_content" in result:
+                    chinese_content = result["chinese_content"]
+                    articles = chinese_content.get("chinese_articles", [])
+                    for article in articles:
+                        article_references.append({
+                            "title": article.get("title", ""),
+                            "url": article.get("url", ""),
+                            "website": result.get("website_name", "")
+                        })
         
         # 准备提示
         prompt = ChatPromptTemplate.from_template("""你是一个资深的新闻编辑和内容整合专家，请根据以下来自多个网站的中文内容，生成一份综合新闻报告：
@@ -46,6 +60,7 @@ class NewsIntegrationAgent:
 6. 结论和建议
 
 报告应当客观、全面，整合所有来源的关键信息。使用Markdown格式输出。
+在引用具体新闻时，请使用以下格式标注来源：[标题](链接)
 """)
         
         # 构建输入
@@ -59,7 +74,7 @@ class NewsIntegrationAgent:
             chain = prompt | self.llm | StrOutputParser()
             report = chain.invoke(input_data)
             
-            # 添加报告头部信息
+            # 添加报告头部信息和引用列表
             header = f"""# 综合新闻报告
 
 **生成时间**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -68,6 +83,14 @@ class NewsIntegrationAgent:
 ---
 
 """
+            
+            # 添加引用列表
+            if article_references:
+                references_section = "\n## 参考文献\n\n"
+                for ref in article_references:
+                    references_section += f"- [{ref['title']}]({ref['url']}) - {ref['website']}\n"
+                references_section += "\n---\n\n"
+                return header + report + references_section
             
             return header + report
         except Exception as e:
